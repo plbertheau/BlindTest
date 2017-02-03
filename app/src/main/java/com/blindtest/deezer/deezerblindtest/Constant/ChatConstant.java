@@ -16,8 +16,10 @@ public class ChatConstant {
 
     public static final String TAG_MESSAGE = "message";
 
+//    public static final String URL = "http://172.16.3.165:3001";
     public static final String URL = "http://172.16.6.133:3000";
 //    public static final String URL = "http://172.16.5.47:3000";
+
     public static final String APPLICATION_ID = "130151";
 
     public static final String SEND_MESSAGE = "ClientGuessMessage";
@@ -33,6 +35,10 @@ public class ChatConstant {
     public static final String RECEIVE_GOOD_ANSWER = "ServerGoodAnswerMessage";
 
     public static final String RECEIVE_GOOD_ANSWER_BROADCAST = "ServerGoodAnswerBroadcast";
+
+    public static final String RECEIVE_BROADCAST_NEWPLAYER = "NewPlayerBroadcast";
+
+    public static final String RECEIVE_NEWPLAYER = "NewPlayerMessage";
 
     class State {
         public static final int ONGOING = 1;

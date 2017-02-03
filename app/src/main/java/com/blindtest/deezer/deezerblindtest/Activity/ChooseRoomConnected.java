@@ -14,6 +14,7 @@ import com.blindtest.deezer.deezerblindtest.Adapters.ImageAdapter;
 import com.blindtest.deezer.deezerblindtest.Constant.ChatConstant;
 import com.blindtest.deezer.deezerblindtest.R;
 import com.blindtest.deezer.deezerblindtest.Transformation.RoundBlurTransformation;
+import com.blindtest.deezer.deezerblindtest.Transformation.RoundFilledBackgroundTransformation;
 import com.blindtest.deezer.deezerblindtest.Utils.BlurManager;
 import com.bumptech.glide.Glide;
 import com.deezer.sdk.model.Album;
@@ -47,16 +48,13 @@ public class ChooseRoomConnected extends AppCompatActivity {
 
         Button createRoom = (Button) findViewById(R.id.button_create_room);
         Button joinRoom = (Button) findViewById(R.id.button_join_room);
-        publicRoom = (GridView) findViewById(R.id.gv_public_room);
+//        publicRoom = (GridView) findViewById(R.id.gv_public_room);
         ivAvatar = (ImageView) findViewById(R.id.iv_avatar);
 
-        Glide.with(this).load(ChatConstant.AVATAR_URL).transform(new RoundBlurTransformation(this,
-                BlurManager.DEFAULT_RADIUS,
-                ROUND_BLUR_MULTIPLY_FACTOR,
-                getResources().getDimensionPixelSize(R.dimen.item_corner_radius),
-                0, // we don't need this border at this moment,
-                ContextCompat.getColor(this, R.color.mosaic_round_blur_border),
-                ROUND_BLUR_FALLBACK_MULTIPLY_FACTOR)).placeholder(R.drawable.cover_icon_profile).into(ivAvatar);
+        Glide.with(this).load(ChatConstant.AVATAR_URL)
+                .transform(new RoundFilledBackgroundTransformation(this, 4, this.getResources().getColor(R.color.bg_transparency)))
+                .placeholder(R.drawable.cover_icon_profile)
+                .into(ivAvatar);
 
         createRoom.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -75,16 +73,16 @@ public class ChooseRoomConnected extends AppCompatActivity {
             }
         });
 
-        publicRoom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                //TODO
-                Long playlist_id = ((Playlist)adapterView.getItemAtPosition(i)).getId();
-                Intent intent = new Intent(ChooseRoomConnected.this, BlindTestMain.class);
-                intent.putExtra("PLAYLIST_ID", playlist_id);
-                startActivity(intent);
-            }
-        });
+//        publicRoom.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+//                //TODO
+//                Long playlist_id = ((Playlist)adapterView.getItemAtPosition(i)).getId();
+//                Intent intent = new Intent(ChooseRoomConnected.this, BlindTestMain.class);
+//                intent.putExtra("PLAYLIST_ID", playlist_id);
+//                startActivity(intent);
+//            }
+//        });
 
 
 
@@ -93,30 +91,30 @@ public class ChooseRoomConnected extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        // the request listener
-        RequestListener listener = new JsonRequestListener() {
-
-            public void onResult(Object result, Object requestId) {
-//                List<Album> albums = (List<Album>) result;
-                List<Playlist> playlists = (List<Playlist>) result;
-                adapter = new ImageAdapter(ChooseRoomConnected.this, playlists);
-                publicRoom.setAdapter(adapter);
-
-                // do something with the albums
-            }
-
-            public void onUnparsedResult(String requestResponse, Object requestId) {}
-
-            public void onException(Exception e, Object requestId) {}
-        };
-
-
-        DeezerRequest request = DeezerRequestFactory.requestUserPlaylists(ChatConstant.USER_ID);
-
-        // set a requestId, that will be passed on the listener's callback methods
-        request.setId("myRequest");
-
-        // launch the request asynchronously
-        deezerConnect.requestAsync(request, listener);
+//        // the request listener
+//        RequestListener listener = new JsonRequestListener() {
+//
+//            public void onResult(Object result, Object requestId) {
+////                List<Album> albums = (List<Album>) result;
+//                List<Playlist> playlists = (List<Playlist>) result;
+//                adapter = new ImageAdapter(ChooseRoomConnected.this, playlists);
+//                publicRoom.setAdapter(adapter);
+//
+//                // do something with the albums
+//            }
+//
+//            public void onUnparsedResult(String requestResponse, Object requestId) {}
+//
+//            public void onException(Exception e, Object requestId) {}
+//        };
+//
+//
+//        DeezerRequest request = DeezerRequestFactory.requestUserPlaylists(ChatConstant.USER_ID);
+//
+//        // set a requestId, that will be passed on the listener's callback methods
+//        request.setId("myRequest");
+//
+//        // launch the request asynchronously
+//        deezerConnect.requestAsync(request, listener);
     }
 }

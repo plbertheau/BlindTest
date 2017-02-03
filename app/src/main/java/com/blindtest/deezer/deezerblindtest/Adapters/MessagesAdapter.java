@@ -1,5 +1,6 @@
 package com.blindtest.deezer.deezerblindtest.Adapters;
 
+import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,9 +22,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessageViewHolder> {
 
     private static final int RIGHT = 0, LEFT = 1;
 
+    private Context mContext;
 
-    public MessagesAdapter(ArrayList<Message> messages) {
+    public MessagesAdapter(ArrayList<Message> messages, Context context) {
         this.messages = messages;
+        mContext = context;
     }
 
 
@@ -62,7 +65,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessageViewHolder> {
                 break;
         }
 
-        return new MessageViewHolder(view);
+        return new MessageViewHolder(view, mContext);
     }
 
     @Override

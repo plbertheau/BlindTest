@@ -6,7 +6,7 @@ package com.blindtest.deezer.deezerblindtest.Model;
 
 public class Message {
 
-    private String name;
+    private String avatarUrl;
     private String message;
 
     /**
@@ -33,6 +33,13 @@ public class Message {
         this.message = message;
     }
 
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
 //    public String getName() {
 //        return name;
 //    }

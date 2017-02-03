@@ -16,9 +16,11 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.blindtest.deezer.deezerblindtest.Adapters.HAdapter;
 import com.blindtest.deezer.deezerblindtest.Adapters.MessagesAdapter;
 import com.blindtest.deezer.deezerblindtest.Constant.ChatConstant;
 import com.blindtest.deezer.deezerblindtest.Model.Message;
+import com.blindtest.deezer.deezerblindtest.Model.Players;
 import com.blindtest.deezer.deezerblindtest.R;
 import com.deezer.sdk.model.Track;
 import com.deezer.sdk.model.User;
@@ -29,11 +31,13 @@ import com.deezer.sdk.network.request.event.RequestListener;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.Socket;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import butterknife.Bind;
@@ -50,15 +54,18 @@ public class BlindTestMain extends AppCompatActivity {
 
 
     private CountDownTimer countDownTimer;
-    private static int COUNTDOWN_TIMER = 30 * 1000;//28s
+    private static int COUNTDOWN_TIMER = 30 * 1000;//30s
     private Long playlist_id;
     private int number_of_track = 0;
     private MediaPlayer mediaPlayer;
 
     private MessagesAdapter messagesAdapter;
+    private HAdapter playerAdapter;
+
     private ArrayList<Message> mMessages = new ArrayList<Message>();
     private Socket mSocket;
     private String room = "";
+    private List<Players> mPlayersList = new ArrayList<>();
 
     private ProgressBar pbCountDown;
     private TextView mTextField;
@@ -71,6 +78,9 @@ public class BlindTestMain extends AppCompatActivity {
 
     @Bind(R.id.recyclerView_messages)
     RecyclerView recyclerView;
+
+    @Bind(R.id.recyclerview_players)
+    RecyclerView recyclerView1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,7 +110,10 @@ public class BlindTestMain extends AppCompatActivity {
         mSocket.on(ChatConstant.RECEIVE_BAD_ANSWER, onBadAnswer);
         mSocket.on(ChatConstant.RECEIVE_BAD_ANSWER_BROADCAST, onBadAnswerBroadcast);
         mSocket.on(ChatConstant.RECEIVE_GOOD_ANSWER, onGoodAnswer);
-        mSocket.on(ChatConstant.RECEIVE_GOOD_ANSWER_BROADCAST,onGoodAnswerBroadcast);
+        mSocket.on(ChatConstant.RECEIVE_GOOD_ANSWER_BROADCAST, onGoodAnswerBroadcast);
+        mSocket.on(ChatConstant.RECEIVE_NEWPLAYER, newPlayerMessage);
+        mSocket.on(ChatConstant.RECEIVE_BROADCAST_NEWPLAYER, newPlayerMessageBroadcast);
+
 //        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectError);
 //        mSocket.on(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
 //        mSocket.on("new message", onNewMessage);
@@ -111,12 +124,23 @@ public class BlindTestMain extends AppCompatActivity {
         mSocket.connect();
         ButterKnife.bind(this);
 
+        LinearLayoutManager layoutManager1 = new LinearLayoutManager(this);
+        layoutManager1.setOrientation(LinearLayoutManager.HORIZONTAL);
+        recyclerView1.setLayoutManager(layoutManager1);
+
+
+        playerAdapter = new HAdapter(this, mPlayersList);
+        recyclerView1.setAdapter(playerAdapter);
+
+
+
+
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
 
         recyclerView.setLayoutManager(layoutManager);
 
-        messagesAdapter = new MessagesAdapter(mMessages);
+        messagesAdapter = new MessagesAdapter(mMessages, this);
 
         recyclerView.setAdapter(messagesAdapter);
 
@@ -190,6 +214,7 @@ public class BlindTestMain extends AppCompatActivity {
 
     private void startMusicProcess() {
         mTextField.setText("30");
+        COUNTDOWN_TIMER = 30000;
         countDownTimer.start();
     }
 
@@ -244,22 +269,52 @@ public class BlindTestMain extends AppCompatActivity {
 
                     JSONObject data = (JSONObject) args[0];
                     JSONObject answer;
-                    String artist;
-                    String album;
-                    String track;
-                    String cover;
+                    String artist = "";
+//                    String album = "";
+//                    String track = "";
+//                    String cover = "";
+
+                    Long id = 0L;
+                    String name = "";
+                    String avatarUrl = "";
+                    int score = 0;
+
+                    List<Players> listPlayer = new ArrayList<Players>();
+
                     try {
+                        JSONArray playersJson = data.getJSONArray("scores");
                         answer = data.getJSONObject("answer");
                         artist = answer.getString("artist");
-                        album = answer.getString("album");
-                        track = answer.getString("track");
-                        cover = answer.getString("cover");
+//                        album = answer.getString("album");
+//                        track = answer.getString("track");
+//                        cover = answer.getString("cover");
+//                        playersJson = data.getJSONArray("scores");
+
+                        for(int i = 0 ; i < playersJson.length() ; i++) {
+                            JSONObject playerObject = playersJson.getJSONObject(i);
+
+
+                            id = playerObject.getLong("id");
+                            name = playerObject.getString("name");
+                            avatarUrl = playerObject.getString("avatarUrl");
+                            score = playerObject.getInt("score");
+                            Players player = new Players();
+                            player.setId(id);
+                            player.setName(name);
+                            player.setAvatarUrl(avatarUrl);
+                            player.setScore(score);
+                            listPlayer.add(player);
+                        }
                     } catch (JSONException e) {
-                        return;
+                        Log.e(TAG, "EXCEPTION ################# : "+e);
                     }
 
                     String s = "la réponse était : "+ artist.toUpperCase(Locale.FRANCE);
                     addMessage(s);
+
+                    mPlayersList.clear();
+                    mPlayersList.addAll(listPlayer);
+                    playerAdapter.notifyDataSetChanged();
 
                     if(mediaPlayer.isPlaying()) {
                         countDownTimer.cancel();
@@ -312,7 +367,7 @@ public class BlindTestMain extends AppCompatActivity {
         @Override
         public void call(final Object... args) {
 
-            Log.d(TAG,"##############CALLL############# onBadAnswer "+args[0]);
+            Log.d(TAG,"##############CALLL############# onBadAnswerBroadcast "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -361,6 +416,19 @@ public class BlindTestMain extends AppCompatActivity {
 
         scrollToBottom();
 
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mPlayersList.clear();
+        Players me = new Players();
+        me.setId(ChatConstant.USER_ID);
+        me.setName(ChatConstant.USERNAME);
+        me.setAvatarUrl(ChatConstant.AVATAR_URL);
+        me.setScore(0);
+        mPlayersList.add(me);
+        playerAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -423,12 +491,6 @@ public class BlindTestMain extends AppCompatActivity {
     }
 
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
-    }
-
     /**
      * Scroller notre recyclerView en bas
      */
@@ -464,7 +526,7 @@ public class BlindTestMain extends AppCompatActivity {
     private Emitter.Listener onConnect = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            Log.d(TAG,"##############CALLL############# onConnect");
+            Log.d(TAG,"##############CALLL############# onConnect "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -490,7 +552,7 @@ public class BlindTestMain extends AppCompatActivity {
     private Emitter.Listener onDisconnect = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
-            Log.d(TAG,"##############CALLL############# onDisconnect");
+            Log.d(TAG,"##############CALLL############# onDisconnect "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -505,7 +567,7 @@ public class BlindTestMain extends AppCompatActivity {
     private Emitter.Listener onConnectError = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
-            Log.d(TAG,"##############CALLL############# onConnectError");
+            Log.d(TAG,"##############CALLL############# onConnectError "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -519,7 +581,7 @@ public class BlindTestMain extends AppCompatActivity {
     private Emitter.Listener onUserJoined = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            Log.d(TAG,"##############CALLL############# onUserJoined");
+            Log.d(TAG,"##############CALLL############# onUserJoined "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -543,7 +605,7 @@ public class BlindTestMain extends AppCompatActivity {
     private Emitter.Listener onGoodAnswer = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            Log.d(TAG,"##############CALLL############# onUserLeft");
+            Log.d(TAG,"##############CALLL############# onGoodAnswer "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -561,10 +623,94 @@ public class BlindTestMain extends AppCompatActivity {
         }
     };
 
+    private Emitter.Listener newPlayerMessageBroadcast = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            Log.d(TAG,"##############CALLL############# newPlayerMessageBroadcast "+args[0]);
+            BlindTestMain.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONArray data = (JSONArray) args[0];
+                    Long id = 0L;
+                    String name = "";
+                    String avatarUrl = "";
+                    Players player = new Players();
+
+                    try {
+                        for(int i = 0; i <data.length(); i++) {
+
+                            JSONObject playerJson = data.getJSONObject(i);
+
+                            id = playerJson.getLong("id");
+                            name = playerJson.getString("name");
+                            avatarUrl = playerJson.getString("avatarUrl");
+
+                            player.setId(id);
+                            player.setName(name);
+                            player.setAvatarUrl(avatarUrl);
+                            player.setScore(0);
+                        }
+                    } catch (JSONException e) {
+                        return;
+                    }
+                    mPlayersList.add(player);
+                    playerAdapter.notifyDataSetChanged();
+                }
+            });
+        }
+    };
+
+    private Emitter.Listener newPlayerMessage = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            Log.d(TAG,"##############CALLL############# newPlayerMessage "+args[0]);
+            BlindTestMain.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    int timeRemaining = 0;
+                    List<Players> playersList = new ArrayList<Players>();
+                    JSONArray playerListJson = new JSONArray();
+                    Long id = 0L;
+                    String name = "";
+                    String avatarUrl = "";
+                    int score = 0;
+                    try {
+                        timeRemaining = data.getInt("timeRemaining");
+                        playerListJson = data.getJSONArray("players");
+                        for(int i = 0 ; i < playerListJson.length() ; i++) {
+                            JSONObject playerObject = playerListJson.getJSONObject(i);
+                            id = playerObject.getLong("id");
+                            name = playerObject.getString("name");
+                            avatarUrl = playerObject.getString("avatarUrl");
+                            score = playerObject.getInt("score");
+                            Players player = new Players();
+                            player.setId(id);
+                            player.setName(name);
+                            player.setAvatarUrl(avatarUrl);
+                            player.setScore(score);
+                            playersList.add(player);
+
+                        }
+                    } catch (JSONException e) {
+                        return;
+                    }
+//                    mTextField.setText(timeRemaining/1000);
+//                    COUNTDOWN_TIMER = timeRemaining/1000;
+//                    countDownTimer.start();
+                    mPlayersList.clear();
+                    mPlayersList.addAll(playersList);
+                    playerAdapter.notifyDataSetChanged();
+                }
+            });
+        }
+
+    };
+
     private Emitter.Listener onGoodAnswerBroadcast = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            Log.d(TAG,"##############CALLL############# onTyping");
+            Log.d(TAG,"##############CALLL############# onGoodAnswerBroadcast "+args[0]);
             BlindTestMain.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
